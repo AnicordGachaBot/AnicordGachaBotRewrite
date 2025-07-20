@@ -57,7 +57,7 @@ def run() -> None:
             intents = discord.Intents.all()
             session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 
-            extensions = ['extensions.internals']
+            extensions = ['extensions.internals', 'extensions.gacha']
 
             async with Mafuyu(
                 command_prefix='a.',

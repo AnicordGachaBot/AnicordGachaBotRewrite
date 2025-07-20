@@ -52,10 +52,20 @@ CREATE TABLE IF NOT EXISTS Cards (
 );
 
 CREATE TABLE IF NOT EXISTS CardInventory (
-    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    id INTEGER NOT NULL references Cards(id),
     is_locked BOOLEAN DEFAULT false,
     -- Shop
     shop_listing_id INTEGER,
     -- Misc
     notes TEXT
 );
+
+CREATE TABLE IF NOT EXISTS CardInventoryNotes (
+    user_id BIGINT NOT NULL,
+    id INTEGER NOT NULL,
+    tag TEXT NOT NULL,
+    PRIMARY KEY (user_id, id, tag)
+);
+
+COMMIT;
