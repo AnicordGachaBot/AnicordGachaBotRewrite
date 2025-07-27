@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 import discord
 import jishaku

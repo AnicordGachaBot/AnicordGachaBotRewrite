@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import asyncpg
 import discord
-from utilities.bases.bot import Mafuyu
 
 from config import DATABASE_CRED, TOKEN
+from utilities.bases.bot import Mafuyu
 
 if TYPE_CHECKING:
     from collections.abc import Generator

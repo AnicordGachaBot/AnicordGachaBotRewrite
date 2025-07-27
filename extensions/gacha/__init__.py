@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from extensions.gacha.inventory import Inventory
-from utilities.bases.bot import Mafuyu
+
+if TYPE_CHECKING:
+    from utilities.bases.bot import Mafuyu
 
 
 class Gacha(Inventory, name='Inventory'): ...

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS Cards (
     -- Basic properties
     is_obtainable BOOLEAN DEFAULT true,
     -- Image proprties
+    -- #TODO: Add image based columns when the initial image storage is provided
     -- Misc
     notes TEXT
 );
