@@ -18,13 +18,13 @@ if TYPE_CHECKING:
     from utilities.types import BlacklistData
 
 from config import OWNER_IDS, WEBHOOK
-from utilities.bases.context import MafuContext
+from utilities.bases.context import AGBContext
 from utilities.constants import BASE_COLOUR
 from utilities.timers import TimerManager
 
-log = logging.getLogger('Mafuyu')
+log = logging.getLogger('AnicordGachaBot')
 
-__all__ = ('Mafuyu',)
+__all__ = ('AnicordGachaBot',)
 
 jishaku.Flags.FORCE_PAGINATOR = True
 jishaku.Flags.HIDE = True
@@ -32,7 +32,7 @@ jishaku.Flags.NO_DM_TRACEBACK = True
 jishaku.Flags.NO_UNDERSCORE = True
 
 
-class Mafuyu(commands.AutoShardedBot):
+class AnicordGachaBot(commands.AutoShardedBot):
     pool: Pool[Record]
     user: discord.ClientUser
     timer_manager: TimerManager
@@ -72,8 +72,8 @@ class Mafuyu(commands.AutoShardedBot):
         await self.load_extension('jishaku')
 
     async def get_context(
-        self, origin: discord.Message | discord.Interaction, *, cls: type[MafuContext] = MafuContext
-    ) -> MafuContext:
+        self, origin: discord.Message | discord.Interaction, *, cls: type[AGBContext] = AGBContext
+    ) -> AGBContext:
         return await super().get_context(origin, cls=cls)
 
     async def is_owner(self, user: discord.abc.User) -> bool:

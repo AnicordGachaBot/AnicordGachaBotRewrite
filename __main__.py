@@ -20,7 +20,7 @@ import asyncpg
 import discord
 
 from config import DATABASE_CRED, TOKEN
-from utilities.bases.bot import Mafuyu
+from utilities.bases.bot import AnicordGachaBot
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -59,7 +59,7 @@ def run() -> None:
 
             extensions = ['extensions.internals', 'extensions.gacha']
 
-            async with Mafuyu(
+            async with AnicordGachaBot(
                 command_prefix='a.',
                 extensions=extensions,
                 allowed_mentions=allowed_mentions,

@@ -9,18 +9,18 @@ from discord.ext import commands
 if TYPE_CHECKING:
     from asyncpg import Pool, Record
 
-    from utilities.bases.bot import Mafuyu  # noqa: F401
+    from utilities.bases.bot import AnicordGachaBot  # noqa: F401
 
 
-class MafuContext(commands.Context['Mafuyu']):
-    @discord.utils.copy_doc(commands.Context['Mafuyu'].reply)
+class AGBContext(commands.Context['AnicordGachaBot']):
+    @discord.utils.copy_doc(commands.Context['AnicordGachaBot'].reply)
     async def reply(self, content: str | None = None, **kwargs: Any) -> discord.Message:
         try:
             return await super().reply(content=content, **kwargs)
         except discord.HTTPException:
             return await super().send(content=content, **kwargs)
 
-    @discord.utils.copy_doc(commands.Context['Mafuyu'].send)
+    @discord.utils.copy_doc(commands.Context['AnicordGachaBot'].send)
     async def send(
         self,
         content: None | str = None,

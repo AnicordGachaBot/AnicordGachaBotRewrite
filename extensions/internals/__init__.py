@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from utilities.bases.bot import Mafuyu
-    from utilities.bases.context import MafuContext
+    from utilities.bases.bot import AnicordGachaBot
+    from utilities.bases.context import AGBContext
 import contextlib
 
 import discord
@@ -18,7 +18,7 @@ from .guild import Guild
 
 class Internals(Blacklist, Developer, ErrorHandler, Guild, name='Developer'):
     @discord.utils.copy_doc(commands.Cog.cog_check)
-    async def cog_check(self, ctx: MafuContext) -> bool:
+    async def cog_check(self, ctx: AGBContext) -> bool:
         if await self.bot.is_owner(ctx.author):
             return True
         msg = 'You do not own this bot.'
@@ -36,5 +36,5 @@ class Internals(Blacklist, Developer, ErrorHandler, Guild, name='Developer'):
                 await reaction.message.delete()
 
 
-async def setup(bot: Mafuyu) -> None:
+async def setup(bot: AnicordGachaBot) -> None:
     await bot.add_cog(Internals(bot))

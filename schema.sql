@@ -69,4 +69,10 @@ CREATE TABLE IF NOT EXISTS CardInventoryNotes (
     PRIMARY KEY (user_id, id, tag)
 );
 
+
+CREATE TABLE IF NOT EXISTS PlayerData (
+  user_id BIGINT PRIMARY KEY,
+  blombos INTEGER DEFAULT 0
+);
+
 COMMIT;

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands, menus
 
-from utilities.bases.cog import MafuCog
+from utilities.bases.cog import AGBCog
 from utilities.constants import BURN_WORTH, HOLLOW_STAR, RARITY_COLOURS, RARITY_EMOJIS
 from utilities.embed import Embed
 from utilities.functions import fmt_str
@@ -14,7 +14,7 @@ from utilities.pagination import Paginator
 if TYPE_CHECKING:
     import asyncpg
 
-    from utilities.bases.context import MafuContext
+    from utilities.bases.context import AGBContext
 
 
 class InventoryCard:
@@ -109,11 +109,16 @@ class CardsPageSource(menus.ListPageSource):
         )
 
 
-class Inventory(MafuCog):
+class GiftFlags(commands.FlagConverter):
+    blombos: int | None
+    card: int | None
+
+
+class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def inventory(self, ctx: MafuContext, user: discord.User = commands.Author) -> None:
+    async def inventory(self, ctx: AGBContext, user: discord.User = commands.Author) -> None:
         data = await self.bot.pool.fetch("""SELECT * FROM CardInventory WHERE user_id = $1""", user.id)
 
         cards = [
@@ -128,7 +133,7 @@ class Inventory(MafuCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def cards(self, ctx: MafuContext) -> None:
+    async def cards(self, ctx: AGBContext) -> None:
         data = await self.bot.pool.fetch("""SELECT * FROM Cards""")
 
         cards = [
@@ -139,3 +144,25 @@ class Inventory(MafuCog):
         paginate = Paginator(CardsPageSource(cards), ctx=ctx)
 
         await paginate.start()
+
+    @commands.hybrid_command()
+    @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @discord.app_commands.allowed_installs(guilds=True, users=True)
+    async def gift(self, ctx: AGBContext, user: discord.User | discord.Member, *, gifts: GiftFlags):
+        if user.bot is True:
+            return await ctx.reply(
+                f'You know..... you can burn the cards instead of gifting it to a bot..... I know you love {user} but man......'
+            )
+
+        if user.id == ctx.author.id:
+            return await ctx.reply(
+                'Alright. Done. Transferred blombos from your account to your account. (May god forgive you cuz I wont)'
+            )
+
+        to_be_gifted_blombos = gifts.blombos
+
+        if to_be_gifted_blombos is not None:
+            blombos = await self.bot.pool.fetchval("""SELECT blombos FROM PlayerData WHERE user_id = $1""", ctx.author.id)
+
+            if not blombos or int(blombos) < to_be_gifted_blombos:
+                return await ctx.reply('You dont have enough blombos')
