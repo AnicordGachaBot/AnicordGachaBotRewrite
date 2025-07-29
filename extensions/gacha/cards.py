@@ -118,7 +118,7 @@ class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def inventory(self, ctx: AGBContext, user: discord.User = commands.Author) -> None:
+    async def inventory(self, ctx: AGBContext, user: discord.Member = commands.Author) -> None:
         data = await self.bot.pool.fetch("""SELECT * FROM CardInventory WHERE user_id = $1""", user.id)
 
         cards = [
@@ -148,7 +148,7 @@ class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def gift(self, ctx: AGBContext, user: discord.User | discord.Member, *, gifts: GiftFlags):
+    async def gift(self, ctx: AGBContext, user: discord.Member, *, gifts: GiftFlags):
         if user.bot is True:
             return await ctx.reply(
                 f'You know..... you can burn the cards instead of gifting it to a bot..... I know you love {user} but man......'
@@ -159,10 +159,35 @@ class Cards(AGBCog):
                 'Alright. Done. Transferred blombos from your account to your account. (May god forgive you cuz I wont)'
             )
 
-        to_be_gifted_blombos = gifts.blombos
+        if not gifts.blombos and not gifts.card:
+            return await ctx.reply('You are trying to gift nothing.')
 
-        if to_be_gifted_blombos is not None:
-            blombos = await self.bot.pool.fetchval("""SELECT blombos FROM PlayerData WHERE user_id = $1""", ctx.author.id)
+        # We have verified all conditions
 
-            if not blombos or int(blombos) < to_be_gifted_blombos:
-                return await ctx.reply('You dont have enough blombos')
+        s: list[tuple[bool, str]] = []
+
+        if gifts.blombos:
+            balance: int = await self.bot.pool.fetchval(
+                """SELECT blombos from PlayerData WHERE user_id = $1""", ctx.author.id
+            )
+
+            if balance < gifts.blombos:
+                s.append((False, f'You are trying to gift {gifts.blombos} blombos but only have {balance}'))
+
+            else:
+                # Blombotic conditions have been met.
+
+                await self.bot.pool.execute(
+                    """INSERT INTO PlayerData (user_id, blombos) VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET blombos = PlayerData.blombos + $2""",
+                    user.id,
+                    gifts.blombos,
+                )
+                await self.bot.pool.execute(
+                    """UPDATE PLayerData SET blombos = PlayerData.blombos - $2 WHERE user_id = $1""",
+                    ctx.author.id,
+                    gifts.blombos,
+                )
+
+                s.append((True, f'Successfully transferred {gifts.blombos} blombos to {user}'))
+
+        return await ctx.reply('\n'.join(a[1] for a in s))
