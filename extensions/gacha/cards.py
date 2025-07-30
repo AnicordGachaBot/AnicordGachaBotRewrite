@@ -111,7 +111,19 @@ class CardsPageSource(menus.ListPageSource):
 
 class GiftFlags(commands.FlagConverter):
     blombos: int | None
-    card: int | None
+    card: str | None
+
+
+CARD_GIFT_QUERY = """WITH to_be_gifted AS (
+   SELECT id
+   FROM   CardInventory
+   WHERE  user_id = $1 AND id = $2
+   LIMIT  1
+   )
+UPDATE CardInventory s
+SET    user_id = $3 
+FROM   to_be_gifted
+WHERE  s.id = to_be_gifted.id"""
 
 
 class Cards(AGBCog):
@@ -151,7 +163,7 @@ class Cards(AGBCog):
     async def gift(self, ctx: AGBContext, user: discord.Member, *, gifts: GiftFlags):
         if user.bot is True:
             return await ctx.reply(
-                f'You know..... you can burn the cards instead of gifting it to a bot..... I know you love {user} but man......'
+                f'You know.. you can burn the cards instead of gifting it to a bot.. I know you love {user.mention} but man'
             )
 
         if user.id == ctx.author.id:
@@ -189,5 +201,33 @@ class Cards(AGBCog):
                 )
 
                 s.append((True, f'Successfully transferred {gifts.blombos} blombos to {user}'))
+
+        if gifts.card:
+            cards = gifts.card.split(' ')
+
+            for card in cards:
+                try:
+                    card_id = int(card)
+                except Exception:
+                    s.append((False, f'{card} is not a card.'))
+                else:
+                    card_data = await self.bot.pool.fetchrow(
+                        """SELECT * FROM CardInventory WHERE user_id = $1 AND id = $2""", ctx.author.id, card_id
+                    )
+                    if card_data is None:
+                        s.append((False, f"You don't own {card_id}"))
+                        continue
+
+                    if card_data['is_locked'] is True:
+                        s.append((False, f'{card_id} is locked'))
+                        continue
+
+                    if card_data['shop_listing_id'] is not None:
+                        s.append((False, f'{card_id} is currently listed on your shop'))
+                        continue
+
+                    await self.bot.pool.execute(CARD_GIFT_QUERY, ctx.author.id, card_id, user.id)
+
+                    s.append((True, f'Successfully gtifted {card_id} to {user}'))
 
         return await ctx.reply('\n'.join(a[1] for a in s))
