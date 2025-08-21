@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 import discord
@@ -44,6 +45,7 @@ class Card:
         name: str,
         rarity: int,
         theme: str,
+        image: str,
         is_obtainable: bool = True,
     ) -> None:
         super().__init__()
@@ -51,6 +53,7 @@ class Card:
         self.name = name
         self.rarity = rarity
         self.theme = theme
+        self.image = image
         self.is_obtainable = is_obtainable
 
 
@@ -94,19 +97,38 @@ class CardsPageSource(menus.ListPageSource):
     def __init__(self, entries: list[Card]) -> None:
         super().__init__(entries, per_page=1)
 
-    async def format_page(self, _: Paginator, page: Card) -> Embed:
-        return Embed(
-            title=page.name,
-            description=fmt_str(
-                [
-                    f'Rarity: {" ".join(rarity_emoji_gen(page.rarity))}',
-                    f'Burn Worth: {BURN_WORTH[page.rarity]}',
-                    f'Theme: {page.theme}',
-                    f'ID: {page.id}',
-                ],
-                seperator='\n',
-            ),
+    async def format_page(self, _: Paginator, page: Card) -> discord.ui.Container:
+        c = discord.ui.Container(accent_color=0xFFFFFF)
+        c.add_item(discord.ui.TextDisplay(f'## {page.name}'))
+        c.add_item(
+            discord.ui.TextDisplay(
+                fmt_str(
+                    [
+                        f'Rarity: {" ".join(rarity_emoji_gen(page.rarity))}',
+                        f'Burn Worth: {BURN_WORTH[page.rarity]}',
+                        f'Theme: {page.theme}',
+                        f'ID: {page.id}',
+                    ],
+                    seperator='\n',
+                )
+            )
         )
+
+        c.add_item(discord.ui.Separator())
+        c.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(page.image)))
+        return c
+        # return Embed(
+        #     title=page.name,
+        #     description=fmt_str(
+        #         [
+        #             f'Rarity: {" ".join(rarity_emoji_gen(page.rarity))}',
+        #             f'Burn Worth: {BURN_WORTH[page.rarity]}',
+        #             f'Theme: {page.theme}',
+        #             f'ID: {page.id}',
+        #         ],
+        #         seperator='\n',
+        #     ),
+        # ).set_image(url=page.image)
 
 
 class GiftFlags(commands.FlagConverter):
@@ -114,16 +136,18 @@ class GiftFlags(commands.FlagConverter):
     card: str | None
 
 
-CARD_GIFT_QUERY = """WITH to_be_gifted AS (
+CARD_GIFT_QUERY = """
+WITH to_be_gifted AS (
    SELECT id
    FROM   CardInventory
    WHERE  user_id = $1 AND id = $2
    LIMIT  1
    )
 UPDATE CardInventory s
-SET    user_id = $3 
+SET    user_id = $3
 FROM   to_be_gifted
-WHERE  s.id = to_be_gifted.id"""
+WHERE  s.id = to_be_gifted.id
+"""
 
 
 class Cards(AGBCog):
@@ -149,7 +173,14 @@ class Cards(AGBCog):
         data = await self.bot.pool.fetch("""SELECT * FROM Cards""")
 
         cards = [
-            Card(i['id'], name=i['name'], rarity=i['rarity'], theme=i['theme'], is_obtainable=i['is_obtainable'])
+            Card(
+                i['id'],
+                name=i['name'],
+                rarity=i['rarity'],
+                theme=i['theme'],
+                image=i['image_url'],
+                is_obtainable=i['is_obtainable'],
+            )
             for i in data
         ]
 
@@ -203,7 +234,7 @@ class Cards(AGBCog):
                 s.append((True, f'Successfully transferred {gifts.blombos} blombos to {user}'))
 
         if gifts.card:
-            cards = gifts.card.split(' ')
+            cards = gifts.card.split(',')
 
             for card in cards:
                 try:

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class Player:
-    def __init__(self, user: discord.User, blombos: int) -> None:
+    def __init__(self, user: discord.Member | discord.User, blombos: int) -> None:
         super().__init__()
         self.user = user
         self.blombos = blombos
@@ -24,11 +24,11 @@ class Blombos(AGBCog):
     @commands.hybrid_command()
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
-    async def balance(self, ctx: AGBContext, user: discord.User = commands.Author) -> None:
+    async def balance(self, ctx: AGBContext, user: discord.Member = commands.Author) -> None:
         data = await self.bot.pool.fetchrow("""SELECT blombos FROM PLayerData WHERE user_id = $1""", user.id)
 
         if not data:
-            return  # This should usually nevert run
+            return  # This should usually never run
 
         player = Player(user, data['blombos'])
 

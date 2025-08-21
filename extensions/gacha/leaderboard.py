@@ -33,7 +33,14 @@ class Leaderboard(AGBCog):
     async def blombos_leaderboard(self, ctx: AGBContext) -> None:
         data = await self.bot.pool.fetch("""SELECT * FROM PlayerData""")
 
-        players = [Player(p, d['blombos']) for d in data if (p := self.bot.get_user(d['user_id'])) and p]
+        players = [
+            Player(
+                p,
+                d['blombos'],
+            )
+            for d in data
+            if (p := self.bot.get_user(d['user_id'])) and p
+        ]
 
         paginate = Paginator(BlombosLBPageSource(players), ctx=ctx)
 
