@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from discord import app_commands
 from discord.ext import commands, menus
 
-from extensions.gacha.blombos import Player
+from extensions.anicord_gacha.blombos import Player
 from utilities.bases.cog import AGBCog
 from utilities.embed import Embed
 from utilities.pagination import Paginator

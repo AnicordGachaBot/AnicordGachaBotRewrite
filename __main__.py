@@ -57,7 +57,7 @@ def run() -> None:
             intents = discord.Intents.all()
             session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 
-            extensions = ['extensions.internals', 'extensions.gacha']
+            extensions = ['extensions.internals', 'extensions.anicord_gacha']
 
             async with AnicordGachaBot(
                 command_prefix='a.',
