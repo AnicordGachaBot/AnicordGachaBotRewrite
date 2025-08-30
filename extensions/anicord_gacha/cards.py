@@ -1,32 +1,26 @@
 from __future__ import annotations
 
-from io import BytesIO
 from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands, menus
 
-from extensions.anicord_gacha.bases import Card, InventoryCard
+from extensions.anicord_gacha.bases import (
+    BURN_WORTH,
+    RARITY_COLOURS,
+    Card,
+    InventoryCard,
+    rarity_emoji_gen,
+)
 from utilities.bases.cog import AGBCog
-from utilities.constants import BURN_WORTH, HOLLOW_STAR, RARITY_COLOURS, RARITY_EMOJIS
 from utilities.embed import Embed
 from utilities.functions import fmt_str
 from utilities.pagination import Paginator
-
 
 if TYPE_CHECKING:
     import asyncpg
 
     from utilities.bases.context import AGBContext
-
-
-def rarity_emoji_gen(r: int) -> list[str]:
-    s: list[str] = [str(HOLLOW_STAR) for _ in range(5 if r != 6 else 6)]
-
-    for rr in range(r):
-        s[rr] = str(RARITY_EMOJIS[r])
-
-    return s
 
 
 class InventoryPageSource(menus.ListPageSource):

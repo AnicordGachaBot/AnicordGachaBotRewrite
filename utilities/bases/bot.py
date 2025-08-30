@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import logging
 from typing import TYPE_CHECKING
+import typing
 
 import discord
 import jishaku
@@ -36,6 +37,7 @@ class AnicordGachaBot(commands.AutoShardedBot):
     pool: Pool[Record]
     user: discord.ClientUser
     timer_manager: TimerManager
+    gacha_variables: dict[str, dict[typing.Any, typing.Any]] = {}  # noqa: RUF012
 
     def __init__(
         self,
@@ -165,6 +167,11 @@ class AnicordGachaBot(commands.AutoShardedBot):
     async def refresh_vars(self) -> None:
         """Set values to some bot constants."""
         self.appinfo = await self.application_info()
+
+        self.gacha_variables['themes'] = {}
+        themes = await self.pool.fetch("""SELECT * FROM Themes""")
+        for theme in themes:
+            self.gacha_variables['themes'][theme['name']] = {'is_disabled': theme['is_disabled']}
 
     @property
     def owner(self) -> discord.TeamMember | discord.User:

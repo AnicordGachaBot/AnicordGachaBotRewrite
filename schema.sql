@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS Cards (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     rarity INTEGER NOT NULL,
-    theme TEXT NOT NULL,
+    theme TEXT NOT NULL references Themes (name),
     -- Basic properties
     is_obtainable BOOLEAN DEFAULT true,
     -- Image proprties
@@ -54,14 +54,21 @@ CREATE TABLE IF NOT EXISTS Cards (
     notes TEXT
 );
 
+CREATE TABLE IF NOT EXISTS Themes (
+    name TEXT PRIMARY KEY,
+    is_disabled BOOLEAN DEFAULT false
+);
+
 CREATE TABLE IF NOT EXISTS CardInventory (
     user_id BIGINT NOT NULL,
     id INTEGER NOT NULL references Cards (id),
+    quantity INTEGER NOT NULL,
     is_locked BOOLEAN DEFAULT false,
     -- Shop
     shop_listing_id INTEGER,
     -- Misc
-    notes TEXT
+    notes TEXT,
+    PRIMARY KEY (user_id, id)
 );
 
 CREATE TABLE IF NOT EXISTS CardInventoryNotes (
@@ -74,6 +81,13 @@ CREATE TABLE IF NOT EXISTS CardInventoryNotes (
 CREATE TABLE IF NOT EXISTS PlayerData (
     user_id BIGINT PRIMARY KEY,
     blombos INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS PullIntervals (
+    user_id BIGINT NOT NULL references PlayerData (user_id),
+    theme TEXT NOT NULL references Themes (name),
+    last_pull TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (user_id, theme)
 );
 
 COMMIT;

@@ -1,33 +1,46 @@
 from __future__ import annotations
 
+import datetime
+from re import A
 import secrets
 from typing import TYPE_CHECKING
-
-from discord import Message
+import typing
+import discord
 from discord.ext import commands
 
-from extensions.anicord_gacha.bases import Card
+from extensions.anicord_gacha.bases import (
+    BURN_WORTH,
+    PULL_INTERVAL,
+    RARITY_COLOURS,
+    RARITY_PULL_MESSAGES,
+    RARITY_WEIGHTS,
+    Card,
+    ThemeConverter,
+    rarity_emoji_gen,
+)
 from utilities.bases.cog import AGBCog
 from utilities.embed import Embed
 from utilities.functions import fmt_str
 
 if TYPE_CHECKING:
+    from discord import Message
+
     from utilities.bases.context import AGBContext
 
-RARITY_WEIGHTS = {
-    1: 0.4395,
-    2: 0.4,
-    3: 0.1,
-    4: 0.05,
-    5: 0.01,
-    6: 0.0005,
-}
+theme_param = commands.parameter(converter=ThemeConverter)
 
 
 class Gacha(AGBCog):
     async def get_random_rarity(self, theme: str) -> int | None:
         rarities_data = await self.bot.pool.fetch(
-            """SELECT DISTINCT rarity FROM Cards WHERE theme = $1""",
+            """
+            SELECT DISTINCT
+                rarity
+            FROM
+                Cards
+            WHERE
+                theme = $1
+            """,
             theme,
         )
 
@@ -61,7 +74,19 @@ class Gacha(AGBCog):
             return None
 
         card = await self.bot.pool.fetchrow(
-            """SELECT * FROM Cards WHERE theme = $1 AND rarity = $2 ORDER BY RANDOM() LIMIT 1""",
+            """
+                SELECT
+                    *
+                FROM
+                    Cards
+                WHERE
+                    theme = $1
+                    AND rarity = $2
+                ORDER BY
+                    RANDOM()
+                LIMIT
+                    1
+            """,
             theme,
             rarity,
         )
@@ -81,23 +106,61 @@ class Gacha(AGBCog):
         # NOTE: We dont fetch themselves because we dont need the data
         # Instead we random integer with the count
 
-    @commands.command()
-    async def pull(self, ctx: AGBContext, theme: str) -> Message:
+    @commands.hybrid_command()
+    async def pull(self, ctx: AGBContext, theme: str = theme_param) -> Message:
+        pull_interval = await self.bot.pool.fetchrow(
+            """SELECT * FROM PullIntervals WHERE user_id = $1 AND theme = $2""", ctx.author.id, theme
+        )
+
+        if pull_interval:
+            last_pulled: datetime.datetime = pull_interval['last_pull']
+            if datetime.datetime.now(datetime.UTC) + PULL_INTERVAL > last_pulled:
+                return await ctx.reply('You cannot pull now!')
+
         card = await self.get_random_card(theme)
 
         if not card:
             return await ctx.reply('Sorry, this theme has no card.')
 
+        new_inventory_entry = await card.give(self.bot.pool, user=ctx.author)
+
+        if new_inventory_entry is None:
+            raise commands.CommandError('Inventory Entry was found to be None')
+
+        is_new = bool(new_inventory_entry['quantity'] > 1)
+
+        await self.bot.pool.execute(
+            """
+            INSERT INTO
+                PullIntervals (user_id, theme, last_pull)
+            VALUES
+                ($2, $3, $1)
+            ON CONFLICT (user_id, theme) DO UPDATE
+            SET
+                last_pull = $1
+            """,
+            datetime.datetime.now(datetime.UTC),
+            ctx.author.id,
+            theme,
+        )
+
         embed = Embed(
-            title='Ayy lmao',
+            title=card.name,
             description=fmt_str(
                 [
+                    f'Rarity: {"".join(rarity_emoji_gen(card.rarity))}',
+                    f'Burn Worth: {BURN_WORTH[card.rarity]}',
                     f'ID: {card.id}',
-                    f'Name: {card.name}',
                 ],
                 seperator='\n',
             ),
+            colour=discord.Colour.from_str(RARITY_COLOURS[card.rarity]),
         )
         embed.set_image(url=card.image)
+        if is_new:
+            embed.set_footer(text='NEW!')
 
-        return await ctx.reply(embed=embed)
+        return await ctx.reply(
+            content=f'{ctx.author.mention} {RARITY_PULL_MESSAGES[card.rarity]}',
+            embed=embed,
+        )
