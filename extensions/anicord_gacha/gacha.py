@@ -127,7 +127,7 @@ class Gacha(AGBCog):
         if new_inventory_entry is None:
             raise commands.CommandError('Inventory Entry was found to be None')
 
-        is_new = bool(new_inventory_entry['quantity'] > 1)
+        is_new = not int(new_inventory_entry['quantity']) > 1
 
         await self.bot.pool.execute(
             """
