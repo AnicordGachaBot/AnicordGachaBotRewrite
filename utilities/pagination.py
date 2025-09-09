@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, reveal_type
+from typing import TYPE_CHECKING, Any, Self
 
 import discord
+
+from .view import BaseView
 
 if TYPE_CHECKING:
     from discord.ext import menus
@@ -29,7 +31,7 @@ class SkipToModal(discord.ui.Modal, title='Skip to page...'):
         self.value = self.page.value
 
 
-class Paginator(discord.ui.LayoutView):
+class Paginator(BaseView):
     # This Source Code Form is subject to the terms of the Mozilla Public
     # License, v. 2.0. If a copy of the MPL was not distributed with this
     # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -56,22 +58,18 @@ class Paginator(discord.ui.LayoutView):
         self.clear_items()
         self.fill_items()
 
-    base_action_row: discord.ui.ActionRow[Self] = discord.ui.ActionRow()
-
     def fill_items(self) -> None:
         if self.source.is_paginating():
-            self.base_action_row.clear_items()
-            self.add_item(self.base_action_row)
             max_pages = self.source.get_max_pages()
             use_last_and_first = max_pages is not None and max_pages >= 2
             if use_last_and_first:
-                self.base_action_row.add_item(self.go_to_first_page)
-            self.base_action_row.add_item(self.go_to_previous_page)
+                self.add_item(self.go_to_first_page)
+            self.add_item(self.go_to_previous_page)
             if not self.compact:
-                self.base_action_row.add_item(self.go_to_current_page)
-            self.base_action_row.add_item(self.go_to_next_page)
+                self.add_item(self.go_to_current_page)
+            self.add_item(self.go_to_next_page)
             if use_last_and_first:
-                self.base_action_row.add_item(self.go_to_last_page)
+                self.add_item(self.go_to_last_page)
 
     async def _get_kwargs_from_page(self, page: int) -> dict[str, Any]:
         value: str | discord.Embed | Any = await discord.utils.maybe_coroutine(self.source.format_page, self, page)  # pyright: ignore[reportUnknownMemberType]
@@ -80,8 +78,6 @@ class Paginator(discord.ui.LayoutView):
             return {'content': value, 'embed': None}
         if isinstance(value, discord.Embed):
             return {'embed': value, 'content': None}
-        if isinstance(value, discord.ui.Container):
-            return {'embed': None, 'content': None, 'container': value}
         return {}
 
     async def show_page(self, interaction: discord.Interaction, page_number: int) -> None:
@@ -90,11 +86,6 @@ class Paginator(discord.ui.LayoutView):
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
         self._update_labels(page_number)
-        if v := kwargs.get('container'):
-            self.clear_items()
-            self.add_item(v)
-            del kwargs['container']
-            self.fill_items()
         if kwargs:
             if interaction.response.is_done():
                 if self.message:
@@ -150,11 +141,6 @@ class Paginator(discord.ui.LayoutView):
         await self.source.prepare()
         page: Any = await self.source.get_page(0)  # pyright: ignore[reportUnknownMemberType]
         kwargs = await self._get_kwargs_from_page(page)
-        if v := kwargs.get('container'):
-            self.clear_items()
-            self.add_item(v)
-            del kwargs['container']
-            self.fill_items()
 
         self._update_labels(0)
 
@@ -164,17 +150,17 @@ class Paginator(discord.ui.LayoutView):
 
         self.message = await message.edit(**kwargs, view=self)
 
-    @base_action_row.button(label='≪', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='≪', style=discord.ButtonStyle.grey)
     async def go_to_first_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the first page."""
         await self.show_page(interaction, 0)
 
-    @base_action_row.button(label='Back', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.blurple)
     async def go_to_previous_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the previous page."""
         await self.show_checked_page(interaction, self.current_page - 1)
 
-    @base_action_row.button(label='Current', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='Current', style=discord.ButtonStyle.grey)
     async def go_to_current_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Lets you type a page number to go to."""
         if self.current_modal is not None and not self.current_modal.is_finished():
@@ -197,12 +183,12 @@ class Paginator(discord.ui.LayoutView):
                 await self.current_modal.interaction.response.defer()
                 await self.show_checked_page(interaction, page - 1)
 
-    @base_action_row.button(label='Next', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='Next', style=discord.ButtonStyle.blurple)
     async def go_to_next_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the next page."""
         await self.show_checked_page(interaction, self.current_page + 1)
 
-    @base_action_row.button(label='≫', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='≫', style=discord.ButtonStyle.grey)
     async def go_to_last_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the last page."""
         # The call here is safe because it's guarded by skip_if

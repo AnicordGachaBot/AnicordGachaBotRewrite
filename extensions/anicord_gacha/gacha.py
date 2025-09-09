@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import datetime
-from re import A
 import secrets
 from typing import TYPE_CHECKING
-import typing
+
 import discord
 from discord.ext import commands
 
@@ -114,7 +113,7 @@ class Gacha(AGBCog):
 
         if pull_interval:
             last_pulled: datetime.datetime = pull_interval['last_pull']
-            if datetime.datetime.now(datetime.UTC) + PULL_INTERVAL > last_pulled:
+            if datetime.datetime.now(datetime.UTC) < last_pulled + PULL_INTERVAL:
                 return await ctx.reply('You cannot pull now!')
 
         card = await self.get_random_card(theme)

@@ -65,21 +65,34 @@ RARITY_PULL_MESSAGES = {
 
 class InventoryCard:
     def __init__(
-        self, id: int, *, locked: bool = False, shop_listing_id: int | None = None, notes: str | None = None
+        self,
+        id: int,
+        quantity: int,
+        *,
+        locked: bool = False,
+        shop_listing_id: int | None = None,
+        notes: str | None = None,
     ) -> None:
         super().__init__()
         self.id = id
+        self.quantity = quantity
         self.locked = locked
         self.shop_listing_id = shop_listing_id
         self.notes = notes
 
-    async def show(self, pool: asyncpg.Pool[asyncpg.Record]) -> asyncpg.Record:
+    async def show(self, pool: asyncpg.Pool[asyncpg.Record]) -> Card:
         data = await pool.fetchrow("""SELECT * FROM Cards WHERE id = $1""", self.id)
 
         if not data:
             raise TypeError('Expected a Record, not None')
 
-        return data
+        return Card(
+            data['id'],
+            name=data['name'],
+            rarity=data['rarity'],
+            theme=data['theme'],
+            image=data['image_url'],
+        )
 
 
 class Card:

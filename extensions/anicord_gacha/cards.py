@@ -36,56 +36,40 @@ class InventoryPageSource(menus.ListPageSource):
         card_assets = await page.show(self.pool)
 
         return Embed(
-            title=f'{card_assets["name"]}',
+            title=f'{card_assets.name}',
             description=fmt_str(
                 [
-                    f'Rarity: {" ".join(rarity_emoji_gen(card_assets["rarity"]))}',
-                    f'Burn Worth: {BURN_WORTH[card_assets["rarity"]]}',
-                    f'Theme: {card_assets["theme"]}',
+                    f'Rarity: {" ".join(rarity_emoji_gen(card_assets.rarity))}',
+                    f'Burn Worth: {BURN_WORTH[card_assets.rarity]}',
+                    f'Theme: {card_assets.theme}',
+                    f'Quantity: {page.quantity}',
+                    f'Is locked: {"Yes" if page.locked is True else "No"}',
                     f'ID: {page.id}',
                 ],
                 seperator='\n',
             ),
-            colour=discord.Colour.from_str(RARITY_COLOURS[card_assets['rarity']]),
-        )
+            colour=discord.Colour.from_str(RARITY_COLOURS[card_assets.rarity]),
+        ).set_image(url=card_assets.image)
 
 
 class CardsPageSource(menus.ListPageSource):
     def __init__(self, entries: list[Card]) -> None:
         super().__init__(entries, per_page=1)
 
-    async def format_page(self, _: Paginator, page: Card) -> discord.ui.Container:
-        c = discord.ui.Container(accent_color=0xFFFFFF)
-        c.add_item(discord.ui.TextDisplay(f'## {page.name}'))
-        c.add_item(
-            discord.ui.TextDisplay(
-                fmt_str(
-                    [
-                        f'Rarity: {" ".join(rarity_emoji_gen(page.rarity))}',
-                        f'Burn Worth: {BURN_WORTH[page.rarity]}',
-                        f'Theme: {page.theme}',
-                        f'ID: {page.id}',
-                    ],
-                    seperator='\n',
-                )
-            )
-        )
-
-        c.add_item(discord.ui.Separator())
-        c.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(page.image)))
-        return c
-        # return Embed(
-        #     title=page.name,
-        #     description=fmt_str(
-        #         [
-        #             f'Rarity: {" ".join(rarity_emoji_gen(page.rarity))}',
-        #             f'Burn Worth: {BURN_WORTH[page.rarity]}',
-        #             f'Theme: {page.theme}',
-        #             f'ID: {page.id}',
-        #         ],
-        #         seperator='\n',
-        #     ),
-        # ).set_image(url=page.image)
+    async def format_page(self, _: Paginator, page: Card) -> Embed:
+        return Embed(
+            title=page.name,
+            description=fmt_str(
+                [
+                    f'Rarity: {" ".join(rarity_emoji_gen(page.rarity))}',
+                    f'Burn Worth: {BURN_WORTH[page.rarity]}',
+                    f'Theme: {page.theme}',
+                    f'ID: {page.id}',
+                ],
+                seperator='\n',
+            ),
+            colour=discord.Colour.from_str(RARITY_COLOURS[page.rarity]),
+        ).set_image(url=page.image)
 
 
 class GiftFlags(commands.FlagConverter):
@@ -115,7 +99,13 @@ class Cards(AGBCog):
         data = await self.bot.pool.fetch("""SELECT * FROM CardInventory WHERE user_id = $1""", user.id)
 
         cards = [
-            InventoryCard(i['id'], locked=i['is_locked'], shop_listing_id=i['shop_listing_id'], notes=i['notes'])
+            InventoryCard(
+                i['id'],
+                i['quantity'],
+                locked=i['is_locked'],
+                shop_listing_id=i['shop_listing_id'],
+                notes=i['notes'],
+            )
             for i in data
         ]
 
@@ -219,3 +209,16 @@ class Cards(AGBCog):
                     s.append((True, f'Successfully gtifted {card_id} to {user}'))
 
         return await ctx.reply('\n'.join(a[1] for a in s))
+
+    @commands.hybrid_command()
+    async def themes(self, ctx: AGBContext):
+        themes = await self.bot.pool.fetch("""SELECT * FROM Themes""")
+
+        s_list: list[str] = []
+
+        for i, theme in enumerate(themes):
+            s_list.append(f'{i}. {theme["name"]}' + ('**[Disabled]**' if theme['is_disabled'] is True else ''))
+
+        embed = Embed(title='Themes', description=fmt_str(s_list, seperator='\n'))
+
+        await ctx.reply(embed=embed)

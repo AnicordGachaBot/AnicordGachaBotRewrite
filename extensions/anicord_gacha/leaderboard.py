@@ -1,29 +1,33 @@
 from __future__ import annotations
 
+import operator
 from typing import TYPE_CHECKING
 
 from discord import app_commands
 from discord.ext import commands, menus
 
-from extensions.anicord_gacha.blombos import Player
 from utilities.bases.cog import AGBCog
 from utilities.embed import Embed
 from utilities.pagination import Paginator
 
 if TYPE_CHECKING:
+    import asyncpg
+
     from utilities.bases.context import AGBContext
 
 
 class BlombosLBPageSource(menus.ListPageSource):
-    def __init__(self, entries: list[Player]) -> None:
-        sorted_entries = list(enumerate(sorted(entries, reverse=True, key=lambda p: p.blombos)))
-        super().__init__(sorted_entries, per_page=10)
+    def __init__(self, entries: list[tuple[int, asyncpg.Record]]) -> None:
+        super().__init__(entries, per_page=10)
 
-    async def format_page(self, _: Paginator, page: list[tuple[int, Player]]) -> Embed:
-        return Embed(
+    async def format_page(self, _: Paginator, page: list[tuple[int, asyncpg.Record]]) -> Embed:
+        embed = Embed(
             title='Blombos leaderboard',
-            description='\n'.join(f'{p[0]}. {p[1].user.mention} - **`{p[1].blombos}`**' for p in page),
+            description='\n'.join(f'{p[0]}. <@{p[1]["user_id"]}> - **`{p[1]["blombos"]}`**' for p in page),
         )
+        embed.set_footer(text=f'You are #{int([a for a in self.entries if a[1]["user_id"] == _.ctx.author.id][0][0]) + 1}')  # noqa: RUF015
+
+        return embed
 
 
 class Leaderboard(AGBCog):
@@ -33,15 +37,16 @@ class Leaderboard(AGBCog):
     async def blombos_leaderboard(self, ctx: AGBContext) -> None:
         data = await self.bot.pool.fetch("""SELECT * FROM PlayerData""")
 
-        players = [
-            Player(
-                p,
-                d['blombos'],
+        enumerated_data = list(
+            enumerate(
+                sorted(
+                    data,
+                    key=operator.itemgetter('blombos'),
+                    reverse=True,
+                ),
             )
-            for d in data
-            if (p := self.bot.get_user(d['user_id'])) and p
-        ]
+        )
 
-        paginate = Paginator(BlombosLBPageSource(players), ctx=ctx)
+        paginate = Paginator(BlombosLBPageSource(enumerated_data), ctx=ctx)
 
         await paginate.start()
