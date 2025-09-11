@@ -31,7 +31,14 @@ class Blacklist(AGBCog):
 
     async def cog_load(self) -> None:
         self.bot.blacklists = {}
-        entries = await self.bot.pool.fetch("""SELECT * FROM Blacklists""")
+        entries = await self.bot.pool.fetch(
+            """
+            SELECT
+                *
+            FROM
+                Blacklists
+            """,
+        )
 
         for entry in entries:
             self.bot.blacklists[entry['snowflake']] = BlacklistData(
@@ -186,7 +193,7 @@ class Blacklist(AGBCog):
         timestamp_wording = self._timestamp_wording(data.lasts_until)
         content = (
             f'{user.mention}, you are blacklisted from using {ctx.bot.user} for `{data.reason}` {timestamp_wording}. '
-            f'If you wish to appeal this blacklist, please join the [Support Server]( {self.bot.support_invite} ).'
+            f'If you wish to appeal this blacklist, please dm one of the developers.'
         )
 
         if isinstance(ctx.channel, discord.DMChannel):
@@ -237,7 +244,7 @@ class Blacklist(AGBCog):
         timestamp_wording = self._timestamp_wording(data.lasts_until)
         content = (
             f'`{guild}` is blacklisted from using this bot for `{data.reason}` {timestamp_wording}. '
-            f'If you wish to appeal this blacklist, please join the [Support Server]( {self.bot.support_invite} ).'
+            f'If you wish to appeal this blacklist, please dm one of the developers.'
         )
 
         if channel:
@@ -285,10 +292,12 @@ class Blacklist(AGBCog):
         blacklist_type = 'user' if isinstance(snowflake, discord.User | discord.Member) else 'guild'
 
         await self.bot.pool.execute(
-            """INSERT INTO
-                    Blacklists (snowflake, reason, lasts_until, blacklist_type)
-               VALUES
-                    ($1, $2, $3, $4);""",
+            """
+            INSERT INTO
+                Blacklists (snowflake, reason, lasts_until, blacklist_type)
+            VALUES
+                ($1, $2, $3, $4)
+            """,
             snowflake.id,
             reason,
             lasts_until,
@@ -330,7 +339,11 @@ class Blacklist(AGBCog):
         obj = snowflake if isinstance(snowflake, int) else snowflake.id
 
         await self.bot.pool.execute(
-            """DELETE FROM Blacklists WHERE snowflake = $1""",
+            """
+            DELETE FROM Blacklists
+            WHERE
+                snowflake = $1
+            """,
             obj,
         )
 

@@ -96,7 +96,17 @@ class Cards(AGBCog):
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
     async def inventory(self, ctx: AGBContext, user: discord.Member = commands.Author) -> None:
-        data = await self.bot.pool.fetch("""SELECT * FROM CardInventory WHERE user_id = $1""", user.id)
+        data = await self.bot.pool.fetch(
+            """
+            SELECT
+                *
+            FROM
+                CardInventory
+            WHERE
+                user_id = $1
+                """,
+            user.id,
+        )
 
         cards = [
             InventoryCard(
@@ -117,7 +127,14 @@ class Cards(AGBCog):
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
     async def cards(self, ctx: AGBContext) -> None:
-        data = await self.bot.pool.fetch("""SELECT * FROM Cards""")
+        data = await self.bot.pool.fetch(
+            """
+            SELECT
+                *
+            FROM
+                Cards
+            """,
+        )
 
         cards = [
             Card(
@@ -138,7 +155,7 @@ class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def gift(self, ctx: AGBContext, user: discord.Member, *, gifts: GiftFlags):
+    async def gift(self, ctx: AGBContext, user: discord.Member, *, gifts: GiftFlags) -> discord.Message:
         if user.bot is True:
             return await ctx.reply(
                 f'You know.. you can burn the cards instead of gifting it to a bot.. I know you love {user.mention} but man'
@@ -158,7 +175,15 @@ class Cards(AGBCog):
 
         if gifts.blombos:
             balance: int = await self.bot.pool.fetchval(
-                """SELECT blombos from PlayerData WHERE user_id = $1""", ctx.author.id
+                """
+                SELECT
+                    blombos
+                from
+                    PlayerData
+                WHERE
+                    user_id = $1
+                """,
+                ctx.author.id,
             )
 
             if balance < gifts.blombos:
@@ -168,13 +193,16 @@ class Cards(AGBCog):
                 # Blombotic conditions have been met.
 
                 await self.bot.pool.execute(
-                    """INSERT INTO PlayerData (user_id, blombos) VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET blombos = PlayerData.blombos + $2""",
+                    """
+                    INSERT INTO
+                        PlayerData (user_id, blombos)
+                    VALUES
+                        ($1, $2)
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET
+                        blombos = PlayerData.blombos + $2
+                    """,
                     user.id,
-                    gifts.blombos,
-                )
-                await self.bot.pool.execute(
-                    """UPDATE PLayerData SET blombos = PlayerData.blombos - $2 WHERE user_id = $1""",
-                    ctx.author.id,
                     gifts.blombos,
                 )
 
@@ -190,7 +218,17 @@ class Cards(AGBCog):
                     s.append((False, f'{card} is not a card.'))
                 else:
                     card_data = await self.bot.pool.fetchrow(
-                        """SELECT * FROM CardInventory WHERE user_id = $1 AND id = $2""", ctx.author.id, card_id
+                        """
+                        SELECT
+                            *
+                        FROM
+                            CardInventory
+                        WHERE
+                            user_id = $1
+                            AND id = $2
+                        """,
+                        ctx.author.id,
+                        card_id,
                     )
                     if card_data is None:
                         s.append((False, f"You don't own {card_id}"))
@@ -211,7 +249,7 @@ class Cards(AGBCog):
         return await ctx.reply('\n'.join(a[1] for a in s))
 
     @commands.hybrid_command()
-    async def themes(self, ctx: AGBContext):
+    async def themes(self, ctx: AGBContext) -> None:
         themes = await self.bot.pool.fetch("""SELECT * FROM Themes""")
 
         s_list: list[str] = []

@@ -169,7 +169,14 @@ class AnicordGachaBot(commands.AutoShardedBot):
         self.appinfo = await self.application_info()
 
         self.gacha_variables['themes'] = {}
-        themes = await self.pool.fetch("""SELECT * FROM Themes""")
+        themes = await self.pool.fetch(
+            """
+            SELECT
+                *
+            FROM
+                Themes
+            """,
+        )
         for theme in themes:
             self.gacha_variables['themes'][theme['name']] = {'is_disabled': theme['is_disabled']}
 

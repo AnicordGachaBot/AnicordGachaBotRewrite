@@ -282,14 +282,27 @@ class ErrorView(BaseView):
     @discord.ui.button(label='Get notified', style=discord.ButtonStyle.green)
     async def notified_button(self, interaction: discord.Interaction[AnicordGachaBot], _: discord.ui.Button[Self]) -> None:
         is_user_present = await interaction.client.pool.fetchrow(
-            """SELECT * FROM ErrorReminders WHERE id = $1 AND user_id = $2""",
+            """
+            SELECT
+                *
+            FROM
+                ErrorReminders
+            WHERE
+                id = $1
+                AND user_id = $2
+            """,
             self.error_record['id'],
             interaction.user.id,
         )
 
         if is_user_present:
             await interaction.client.pool.execute(
-                """DELETE FROM ErrorReminders WHERE id = $1 AND user_id = $2""",
+                """
+                DELETE FROM ErrorReminders
+                WHERE
+                    id = $1
+                    AND user_id = $2
+                """,
                 self.error_record['id'],
                 interaction.user.id,
             )
@@ -300,7 +313,12 @@ class ErrorView(BaseView):
             return
 
         await interaction.client.pool.execute(
-            """INSERT INTO ErrorReminders (id, user_id) VALUES ($1, $2)""",
+            """
+            INSERT INTO
+                ErrorReminders (id, user_id)
+            VALUES
+                ($1, $2)
+            """,
             self.error_record['id'],
             interaction.user.id,
         )
@@ -622,8 +640,28 @@ class ErrorHandler(AGBCog):
         if not data:
             await ctx.reply(f'Cannot find an error with the ID: `{error_id}`')
             return
-        await self.bot.pool.execute("""UPDATE Errors SET fixed = $1 WHERE id = $2""", True, error_id)
-        notifiers = await self.bot.pool.fetch("""SELECT user_id FROM ErrorReminders WHERE id = $1""", error_id)
+        await self.bot.pool.execute(
+            """
+            UPDATE Errors
+            SET
+                fixed = $1
+            WHERE
+                id = $2
+            """,
+            True,
+            error_id,
+        )
+        notifiers = await self.bot.pool.fetch(
+            """
+            SELECT
+                user_id
+            FROM
+                ErrorReminders
+            WHERE
+                id = $1
+            """,
+            error_id,
+        )
         if notifiers:
             users = [_ for _ in [self.bot.get_user(user['user_id']) for user in notifiers] if _]
             for user in users:
@@ -632,5 +670,12 @@ class ErrorHandler(AGBCog):
                 except discord.errors.Forbidden:
                     continue
             # Assuming all goes fine
-            await self.bot.pool.execute("""DELETE FROM ErrorReminders WHERE id = $1""", error_id)
+            await self.bot.pool.execute(
+                """
+                DELETE FROM ErrorReminders
+                WHERE
+                    id = $1
+                """,
+                error_id,
+            )
         await ctx.message.add_reaction(BotEmojis.GREEN_TICK)

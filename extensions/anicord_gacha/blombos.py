@@ -25,7 +25,17 @@ class Blombos(AGBCog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def balance(self, ctx: AGBContext, user: discord.Member = commands.Author) -> None:
-        data = await self.bot.pool.fetchrow("""SELECT blombos FROM PLayerData WHERE user_id = $1""", user.id)
+        data = await self.bot.pool.fetchrow(
+            """
+            SELECT
+                blombos
+            FROM
+                PLayerData
+            WHERE
+                user_id = $1
+            """,
+            user.id,
+        )
 
         if not data:
             return  # This should usually never run

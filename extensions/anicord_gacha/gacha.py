@@ -74,17 +74,17 @@ class Gacha(AGBCog):
 
         card = await self.bot.pool.fetchrow(
             """
-                SELECT
-                    *
-                FROM
-                    Cards
-                WHERE
-                    theme = $1
-                    AND rarity = $2
-                ORDER BY
-                    RANDOM()
-                LIMIT
-                    1
+            SELECT
+                *
+            FROM
+                Cards
+            WHERE
+                theme = $1
+                AND rarity = $2
+            ORDER BY
+                RANDOM()
+            LIMIT
+                1
             """,
             theme,
             rarity,
@@ -108,7 +108,17 @@ class Gacha(AGBCog):
     @commands.hybrid_command()
     async def pull(self, ctx: AGBContext, theme: str = theme_param) -> Message:
         pull_interval = await self.bot.pool.fetchrow(
-            """SELECT * FROM PullIntervals WHERE user_id = $1 AND theme = $2""", ctx.author.id, theme
+            """
+            SELECT
+                *
+            FROM
+                PullIntervals
+            WHERE
+                user_id = $1
+                AND theme = $2
+            """,
+            ctx.author.id,
+            theme,
         )
 
         if pull_interval:

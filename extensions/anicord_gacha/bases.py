@@ -81,7 +81,17 @@ class InventoryCard:
         self.notes = notes
 
     async def show(self, pool: asyncpg.Pool[asyncpg.Record]) -> Card:
-        data = await pool.fetchrow("""SELECT * FROM Cards WHERE id = $1""", self.id)
+        data = await pool.fetchrow(
+            """
+            SELECT
+                *
+            FROM
+                Cards
+            WHERE
+                id = $1
+            """,
+            self.id,
+        )
 
         if not data:
             raise TypeError('Expected a Record, not None')
