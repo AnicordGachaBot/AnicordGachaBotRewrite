@@ -155,7 +155,7 @@ class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def gift(self, ctx: AGBContext, user: discord.Member, *, gifts: GiftFlags) -> discord.Message:
+    async def gift(self, ctx: AGBContext, user: discord.Member, *, gifts: GiftFlags) -> discord.Message:  # noqa: PLR0912
         if user.bot is True:
             return await ctx.reply(
                 f'You know.. you can burn the cards instead of gifting it to a bot.. I know you love {user.mention} but man'

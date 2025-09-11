@@ -56,7 +56,7 @@ class Gacha(AGBCog):
         for i in range(1, len(weights)):
             cumulative_distribution[i] = cumulative_distribution[i - 1] + weights[i]
 
-        # TODO: The above logic is supposed to be improved.
+        # TODO: The above logic is supposed to be improved.  # noqa: TD002
 
         dice = secrets.SystemRandom().random()
 

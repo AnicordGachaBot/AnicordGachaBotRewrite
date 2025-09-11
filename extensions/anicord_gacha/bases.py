@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING, Any
 import discord
 from discord.ext import commands
 
-from utilities.bases.context import AGBContext
-
 if TYPE_CHECKING:
     import asyncpg
     from asyncpg import Record
+
+    from utilities.bases.context import AGBContext
 
 
 RARITY_EMOJIS = {
@@ -106,7 +106,7 @@ class InventoryCard:
 
 
 class Card:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         id: int,
         *,
