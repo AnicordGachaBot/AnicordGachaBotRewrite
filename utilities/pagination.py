@@ -103,8 +103,6 @@ class Paginator(BaseView):
             return
 
         self.go_to_current_page.label = str(page_number + 1)
-        self.go_to_previous_page.label = str(page_number)
-        self.go_to_next_page.label = str(page_number + 2)
         self.go_to_next_page.disabled = False
         self.go_to_previous_page.disabled = False
         self.go_to_first_page.disabled = False
@@ -150,12 +148,12 @@ class Paginator(BaseView):
 
         self.message = await message.edit(**kwargs, view=self)
 
-    @discord.ui.button(label='≪', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='⏪', style=discord.ButtonStyle.grey)
     async def go_to_first_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the first page."""
         await self.show_page(interaction, 0)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple)
     async def go_to_previous_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the previous page."""
         await self.show_checked_page(interaction, self.current_page - 1)
@@ -183,12 +181,12 @@ class Paginator(BaseView):
                 await self.current_modal.interaction.response.defer()
                 await self.show_checked_page(interaction, page - 1)
 
-    @discord.ui.button(label='Next', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple)
     async def go_to_next_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the next page."""
         await self.show_checked_page(interaction, self.current_page + 1)
 
-    @discord.ui.button(label='≫', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='⏩', style=discord.ButtonStyle.grey)
     async def go_to_last_page(self, interaction: discord.Interaction, _: discord.ui.Button[Self]) -> None:
         """Go to the last page."""
         # The call here is safe because it's guarded by skip_if
