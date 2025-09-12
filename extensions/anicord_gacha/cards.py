@@ -9,6 +9,7 @@ from extensions.anicord_gacha.bases import (
     BURN_WORTH,
     RARITY_COLOURS,
     Card,
+    GachaMemberConverter,
     InventoryCard,
     rarity_emoji_gen,
 )
@@ -90,6 +91,8 @@ FROM   to_be_gifted
 WHERE  s.id = to_be_gifted.id
 """
 
+user_param = commands.parameter(converter=GachaMemberConverter)
+
 
 class Cards(AGBCog):
     @commands.hybrid_command()
@@ -155,23 +158,18 @@ class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def gift(self, ctx: AGBContext, user: discord.Member, *, gifts: GiftFlags) -> discord.Message:  # noqa: PLR0912
-        if user.bot is True:
-            return await ctx.reply(
-                f'You know.. you can burn the cards instead of gifting it to a bot.. I know you love {user.mention} but man'
-            )
-
-        if user.id == ctx.author.id:
-            return await ctx.reply(
-                'Alright. Done. Transferred blombos from your account to your account. (May god forgive you cuz I wont)'
-            )
-
+    async def gift(
+        self,
+        ctx: AGBContext,
+        user: discord.Member = user_param,
+        *,
+        gifts: GiftFlags,
+    ) -> discord.Message | None:
         if not gifts.blombos and not gifts.card:
             return await ctx.reply('You are trying to gift nothing.')
 
-        # We have verified all conditions
-
-        s: list[tuple[bool, str]] = []
+        s: list[tuple[bool, str | None, int, int | str]] = []
+        # NOTE: The tuple represents Success/Failure, message for failure, type of gift, the entry for the gift
 
         if gifts.blombos:
             balance: int = await self.bot.pool.fetchval(
@@ -187,7 +185,12 @@ class Cards(AGBCog):
             )
 
             if balance < gifts.blombos:
-                s.append((False, f'You are trying to gift {gifts.blombos} blombos but only have {balance}'))
+                s.append((
+                    False,
+                    f'You are trying to gift {gifts.blombos} blombos but only have {balance}',
+                    1,
+                    gifts.blombos,
+                ))
 
             else:
                 # Blombotic conditions have been met.
@@ -206,7 +209,7 @@ class Cards(AGBCog):
                     gifts.blombos,
                 )
 
-                s.append((True, f'Successfully transferred {gifts.blombos} blombos to {user}'))
+                s.append((True, None, 1, gifts.blombos))
 
         if gifts.card:
             cards = gifts.card.split(',')
@@ -215,7 +218,7 @@ class Cards(AGBCog):
                 try:
                     card_id = int(card)
                 except Exception:
-                    s.append((False, f'{card} is not a card.'))
+                    s.append((False, f'{card} is not a card.', 2, card))
                 else:
                     card_data = await self.bot.pool.fetchrow(
                         """
@@ -231,22 +234,52 @@ class Cards(AGBCog):
                         card_id,
                     )
                     if card_data is None:
-                        s.append((False, f"You don't own {card_id}"))
+                        s.append((False, f"You don't own {card_id}", 2, card_id))
                         continue
 
                     if card_data['is_locked'] is True:
-                        s.append((False, f'{card_id} is locked'))
+                        s.append((False, f'{card_id} is locked', 2, card_id))
                         continue
 
                     if card_data['shop_listing_id'] is not None:
-                        s.append((False, f'{card_id} is currently listed on your shop'))
+                        s.append((False, f'{card_id} is currently listed on your shop', 2, card_id))
                         continue
 
-                    await self.bot.pool.execute(CARD_GIFT_QUERY, ctx.author.id, card_id, user.id)
+                    await self.bot.pool.execute(
+                        CARD_GIFT_QUERY,
+                        ctx.author.id,
+                        card_id,
+                        user.id,
+                    )
 
-                    s.append((True, f'Successfully gtifted {card_id} to {user}'))
+                    s.append((True, None, 2, card_id))
 
-        return await ctx.reply('\n'.join(a[1] for a in s))
+        await ctx.reply(
+            embed=Embed(
+                title='Gifts ' + 'sent' if len([_ for _ in s if _[0] is True]) >= 1 else 'not sent',
+                description=fmt_str(
+                    [f'- {d[1]}' for d in s if d[0] is False],
+                    seperator='\n',
+                ),
+            ),
+        )
+
+        if len([_ for _ in s if _[0] is True]) >= 1:
+            embed = Embed(title='Gift recieved')
+            desc: list[str] = []
+            for entry in s:
+                if entry[0] is False:
+                    continue
+
+                if entry[2] == 1:
+                    desc.append(f'- `{entry[3]}` blombos')
+
+                if entry[2] == 2:
+                    desc.append(f'- Card `ID:{entry[3]}`')
+
+            embed.description = fmt_str(desc, seperator='\n')
+            await user.send(embed=embed)
+        return None
 
     @commands.hybrid_command()
     async def themes(self, ctx: AGBContext) -> None:

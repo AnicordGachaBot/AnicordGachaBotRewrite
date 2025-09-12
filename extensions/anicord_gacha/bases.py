@@ -163,3 +163,16 @@ class ThemeConverter(commands.Converter[str]):
             raise commands.BadArgument('This theme is currently disabled')
 
         return argument
+
+
+class GachaMemberConverter(commands.MemberConverter):
+    async def convert(self, ctx: AGBContext, argument: str) -> discord.Member:
+        p = await super().convert(ctx, argument)
+
+        if p.bot is True:
+            raise commands.BadArgument('This user is a bot')
+
+        if p.id == ctx.author.id:
+            raise commands.BadArgument("The target for this argument can't be you")
+
+        return p
