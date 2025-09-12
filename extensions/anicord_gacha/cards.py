@@ -158,7 +158,7 @@ class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def gift(
+    async def gift(  # noqa: C901, PLR0912
         self,
         ctx: AGBContext,
         user: discord.Member = user_param,
