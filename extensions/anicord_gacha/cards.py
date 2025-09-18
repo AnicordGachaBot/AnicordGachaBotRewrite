@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.ext import commands, menus
@@ -11,6 +11,7 @@ from extensions.anicord_gacha.bases import (
     Card,
     GachaMemberConverter,
     InventoryCard,
+    ThemeConverter,
     rarity_emoji_gen,
 )
 from utilities.bases.cog import AGBCog
@@ -92,24 +93,60 @@ WHERE  s.id = to_be_gifted.id
 """
 
 user_param = commands.parameter(converter=GachaMemberConverter)
+theme_param = commands.parameter(converter=ThemeConverter, default=None)
 
 
 class Cards(AGBCog):
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def inventory(self, ctx: AGBContext, user: discord.Member = commands.Author) -> None:
+    async def inventory(  # noqa: PLR0913, PLR0917
+        self,
+        ctx: AGBContext,
+        user: discord.Member = commands.Author,
+        rarity: commands.Range[int, 1, 6] | None = None,
+        name: str | None = None,
+        theme: str | None = theme_param,
+        show_most_owned_first: bool | None = False,  # noqa: FBT001, FBT002
+    ) -> discord.Message | None:
+        query = """
+        SELECT
+            ci.*
+        FROM
+            CardInventory ci
+            JOIN Cards c ON ci.id = c.id
+        WHERE
+        """
+
+        params: list[str] = []
+        args: list[Any] = []
+
+        params.append(f'ci.user_id = ${len(params) + 1}')
+        args.append(user.id)
+
+        if rarity:
+            params.append(f'c.rarity = ${len(params) + 1}')
+            args.append(rarity)
+
+        if name:
+            params.append(f'c.name = ${len(params) + 1}')
+            args.append(name)
+
+        if theme:
+            params.append(f'c.theme = ${len(params) + 1}')
+            args.append(name)
+
+        query += ' AND '.join(params)
+
+        if show_most_owned_first is True:
+            query += ' ORDER BY ci.quantity DESC'
+
         data = await self.bot.pool.fetch(
-            """
-            SELECT
-                *
-            FROM
-                CardInventory
-            WHERE
-                user_id = $1
-                """,
-            user.id,
+            query,
+            *args,
         )
+
+        # TODO: Find a better way to do conditional selects
 
         cards = [
             InventoryCard(
@@ -122,9 +159,32 @@ class Cards(AGBCog):
             for i in data
         ]
 
+        if not cards:
+            # TODO: Fix the english for the text below
+            return await ctx.reply(
+                fmt_str(
+                    [
+                        f'{user} has no cards',
+                        'with '
+                        + fmt_str(
+                            [
+                                f'rarity being {rarity}' if rarity else None,
+                                f'theme being {theme}' is theme,
+                                f'name being {name}' if name else None,
+                            ],
+                            seperator=', ',
+                        )
+                        if (rarity or theme or name) is not None
+                        else None,
+                    ],
+                    seperator=' ',
+                ),
+            )
+
         paginate = Paginator(InventoryPageSource(self.bot.pool, cards), ctx=ctx)
 
         await paginate.start()
+        return None
 
     @commands.hybrid_command()
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
