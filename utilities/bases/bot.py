@@ -178,7 +178,7 @@ class AnicordGachaBot(commands.AutoShardedBot):
             """,
         )
         for theme in themes:
-            self.gacha_variables['themes'][theme['name']] = {'is_disabled': theme['is_disabled']}
+            self.gacha_variables['themes'][str(theme['name']).lower()] = {'is_disabled': theme['is_disabled']}
 
     @property
     def owner(self) -> discord.TeamMember | discord.User:

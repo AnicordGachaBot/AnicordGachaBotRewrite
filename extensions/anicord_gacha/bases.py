@@ -156,10 +156,10 @@ class ThemeConverter(commands.Converter[str]):
     async def convert(self, ctx: AGBContext, argument: str) -> str:
         themes: dict[str, dict[str, Any]] = ctx.bot.gacha_variables['themes']
 
-        if argument not in list(themes.keys()):
+        if argument.lower() not in [_.lower() for _ in themes]:
             raise commands.BadArgument('This theme does not exist')
 
-        if themes[argument]['is_disabled'] is True:
+        if themes[argument.lower()]['is_disabled'] is True:
             raise commands.BadArgument('This theme is currently disabled')
 
         return argument

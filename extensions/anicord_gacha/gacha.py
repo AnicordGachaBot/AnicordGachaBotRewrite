@@ -38,9 +38,9 @@ class Gacha(AGBCog):
             FROM
                 Cards
             WHERE
-                theme = $1
+                LOWER(theme) = $1
             """,
-            theme,
+            theme.lower(),
         )
 
         if not rarities_data:
@@ -79,14 +79,14 @@ class Gacha(AGBCog):
             FROM
                 Cards
             WHERE
-                theme = $1
+                LOWER(theme) = $1
                 AND rarity = $2
             ORDER BY
                 RANDOM()
             LIMIT
                 1
             """,
-            theme,
+            theme.lower(),
             rarity,
         )
 
@@ -115,10 +115,10 @@ class Gacha(AGBCog):
                 PullIntervals
             WHERE
                 user_id = $1
-                AND theme = $2
+                AND LOWER(theme) = $2
             """,
             ctx.author.id,
-            theme,
+            theme.lower(),
         )
 
         if pull_interval:
@@ -143,7 +143,18 @@ class Gacha(AGBCog):
             INSERT INTO
                 PullIntervals (user_id, theme, last_pull)
             VALUES
-                ($2, $3, $1)
+                (
+                    $2,
+                    (
+                        SELECT
+                            name
+                        FROM
+                            Themes
+                        WHERE
+                            LOWER(name) = LOWER($3)
+                    ),
+                    $1
+                )
             ON CONFLICT (user_id, theme) DO UPDATE
             SET
                 last_pull = $1
