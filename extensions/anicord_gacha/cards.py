@@ -353,3 +353,36 @@ class Cards(AGBCog):
         embed = Embed(title='Themes', description=fmt_str(s_list, seperator='\n'))
 
         await ctx.reply(embed=embed)
+
+    @commands.hybrid_command()
+    async def showcase(self, ctx: AGBContext, card: int) -> discord.Message:
+        data = await self.bot.pool.fetchrow(
+            """SELECT * FROM CardInventory WHERE user_id = $1 AND id = $2""",
+            ctx.author.id,
+            card,
+        )
+        if not data:
+            return await ctx.reply("You don't have that card")
+
+        inventory_data = InventoryCard(data['id'], data['quantity'], notes=data['notes'])
+        # NOTE: We dont really need the other data
+
+        card_data = await inventory_data.show(self.bot.pool)
+
+        embed = Embed(
+            title=card_data.name,
+            description=fmt_str(
+                [
+                    f'Rarity: {"".join(rarity_emoji_gen(card_data.rarity))}',
+                    f'Burn Worth: {BURN_WORTH[card_data.rarity]}',
+                    f'Theme: {card_data.theme}',
+                    f'ID: {card_data.id}',
+                ],
+                seperator='\n',
+            ),
+            colour=discord.Colour.from_str(RARITY_COLOURS[card_data.rarity]),
+        )
+
+        embed.set_image(url=card_data.image)
+
+        return await ctx.reply(f'Owned by {ctx.author.mention}', embed=embed)
