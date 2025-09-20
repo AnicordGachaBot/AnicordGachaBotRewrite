@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS PlayerData (
     user_id BIGINT PRIMARY KEY,
     blombos INTEGER DEFAULT 0,
     bio TEXT,
-    wallpaper INTEGER references CardInventory (id)
+    wallpaper INTEGER references Cards (id)
 );
 
 CREATE TABLE IF NOT EXISTS PullIntervals (
