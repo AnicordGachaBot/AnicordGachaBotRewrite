@@ -20,7 +20,7 @@ class Player:
         self.blombos = blombos
 
 
-class Blombos(AGBCog):
+class Profile(AGBCog):
     @commands.hybrid_command()
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
