@@ -34,10 +34,10 @@ class InventoryPageSource(menus.ListPageSource):
         super().__init__(entries, per_page=1)
         self.pool = pool
 
-    async def format_page(self, _: Paginator, page: InventoryCard) -> Embed:
+    async def format_page(self, _: Paginator, page: InventoryCard) -> tuple[Embed, discord.File]:
         card_assets = await page.show(self.pool)
 
-        return Embed(
+        embed = Embed(
             title=f'{card_assets.name}',
             description=fmt_str(
                 [
@@ -51,15 +51,19 @@ class InventoryPageSource(menus.ListPageSource):
                 seperator='\n',
             ),
             colour=discord.Colour.from_str(RARITY_COLOURS[card_assets.rarity]),
-        ).set_image(url=card_assets.image)
+        )
+        file = discord.File(fp=card_assets.image)
+
+        embed.set_image(url=f'attachment://{file.filename}')
+        return (embed, file)
 
 
 class CardsPageSource(menus.ListPageSource):
     def __init__(self, entries: list[Card]) -> None:
         super().__init__(entries, per_page=1)
 
-    async def format_page(self, _: Paginator, page: Card) -> Embed:
-        return Embed(
+    async def format_page(self, _: Paginator, page: Card) -> tuple[Embed, discord.File]:
+        embed = Embed(
             title=page.name,
             description=fmt_str(
                 [
@@ -71,7 +75,11 @@ class CardsPageSource(menus.ListPageSource):
                 seperator='\n',
             ),
             colour=discord.Colour.from_str(RARITY_COLOURS[page.rarity]),
-        ).set_image(url=page.image)
+        )
+        file = discord.File(fp=page.image)
+
+        embed.set_image(url=f'attachment://{file.filename}')
+        return (embed, file)
 
 
 class GiftFlags(commands.FlagConverter):
@@ -205,7 +213,7 @@ class Cards(AGBCog):
                 name=i['name'],
                 rarity=i['rarity'],
                 theme=i['theme'],
-                image=i['image_url'],
+                image=i['image_path'],
                 is_obtainable=i['is_obtainable'],
             )
             for i in data

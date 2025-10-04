@@ -101,7 +101,7 @@ class InventoryCard:
             name=data['name'],
             rarity=data['rarity'],
             theme=data['theme'],
-            image=data['image_url'],
+            image=data['image_path'],
         )
 
 

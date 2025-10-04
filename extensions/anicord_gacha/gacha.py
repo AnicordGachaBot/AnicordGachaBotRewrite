@@ -98,7 +98,7 @@ class Gacha(AGBCog):
             name=card['name'],
             rarity=card['rarity'],
             theme=card['theme'],
-            image=card['image_url'],
+            image=card['image_path'],
             is_obtainable=card['is_obtainable'],
         )
 

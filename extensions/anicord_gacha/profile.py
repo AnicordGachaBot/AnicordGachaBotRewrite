@@ -92,7 +92,7 @@ class Profile(AGBCog):
                 name=data['card_data']['name'],
                 rarity=data['card_data']['rarity'],
                 theme=data['card_data']['theme'],
-                image=data['card_data']['image_url'],
+                image=data['card_data']['image_path'],
             )
             if data['is_in_inventory'] is True
             else None,

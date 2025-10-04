@@ -47,8 +47,7 @@ CREATE TABLE IF NOT EXISTS Cards (
     -- Basic properties
     is_obtainable BOOLEAN DEFAULT true,
     -- Image proprties
-    -- Temporarily, some data
-    image_url TEXT NOT NULL,
+    image_path TEXT NOT NULL,
     -- #TODO: Add image based columns when the initial image storage is provided
     -- Misc
     notes TEXT
@@ -64,8 +63,6 @@ CREATE TABLE IF NOT EXISTS CardInventory (
     id INTEGER NOT NULL references Cards (id),
     quantity INTEGER NOT NULL,
     is_locked BOOLEAN DEFAULT false,
-    -- Shop
-    shop_listing_id INTEGER,
     -- Misc
     notes TEXT,
     PRIMARY KEY (user_id, id)

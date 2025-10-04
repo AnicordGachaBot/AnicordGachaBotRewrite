@@ -75,9 +75,11 @@ class Paginator(BaseView):
         value: str | discord.Embed | Any = await discord.utils.maybe_coroutine(self.source.format_page, self, page)  # pyright: ignore[reportUnknownMemberType]
 
         if isinstance(value, str):
-            return {'content': value, 'embed': None}
+            return {'content': value, 'embed': None, 'files': None}
         if isinstance(value, discord.Embed):
-            return {'embed': value, 'content': None}
+            return {'embed': value, 'content': None, 'files': None}
+        if isinstance(value, tuple):
+            return {'embed': value[0], 'files': [value[1]]}
         return {}
 
     async def show_page(self, interaction: discord.Interaction, page_number: int) -> None:
